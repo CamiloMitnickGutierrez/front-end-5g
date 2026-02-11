@@ -100,9 +100,13 @@ export const Scanner = () => {
       return;
     }
 
-    // CORRECCIÓN 1: Pausar sin congelar el video (false)
+    // Pausar el escáner manteniendo el video fluido
     if (html5QrCodeRef.current && html5QrCodeRef.current.isScanning) {
-      html5QrCodeRef.current.pause(false); 
+      try {
+        html5QrCodeRef.current.pause(false); 
+      } catch (e) {
+        console.log("Error al pausar:", e);
+      }
     }
 
     ultimoQrRef.current = { id, timestamp: ahora };
@@ -126,14 +130,27 @@ export const Scanner = () => {
     } finally {
       setLoading(false);
       
-      // CORRECCIÓN 2: Reactivación automática tras el mensaje
+      // Reactivar el escáner después de mostrar el mensaje
       setTimeout(() => {
         setStatus('idle');
         setMessage("");
         
-        // Solo reanuda si el escáner existe y está efectivamente pausado (estado 3)
-        if (html5QrCodeRef.current && html5QrCodeRef.current.getState() === 3) {
-          html5QrCodeRef.current.resume();
+        // Reanudar el escáner
+        if (html5QrCodeRef.current) {
+          try {
+            const estado = html5QrCodeRef.current.getState();
+            console.log("Estado del escáner:", estado); // Debug
+            
+            // Estado 3 = PAUSED, podemos resumir
+            if (estado === 3) {
+              html5QrCodeRef.current.resume();
+              console.log("Escáner reanudado");
+            } else {
+              console.log("Estado inesperado:", estado);
+            }
+          } catch (e) {
+            console.error("Error al reanudar escáner:", e);
+          }
         }
       }, 3500); 
     }
