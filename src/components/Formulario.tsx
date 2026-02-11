@@ -13,15 +13,15 @@ import { registrarAsistente } from "../api/registro.service";
 import { ModalExito } from "./Modal";
 
 const validationSchema = Yup.object().shape({
-    nombre: Yup.string().required("El nombre es obligatorio"),
-    primerApellido: Yup.string().required("El primer apellido es obligatorio"),
-    telefono: Yup.string().required("El teléfono es obligatorio"),
-    ciudad: Yup.string().required("La ciudad es obligatoria"),
-    municipio: Yup.string().required("El municipio es obligatorio"),
-    barrio: Yup.string().required("El barrio es obligatorio"),
+    nombre: Yup.string().required("El Nombre es obligatorio"),
+    primerApellido: Yup.string().required("El Primer apellido es obligatorio"),
+    telefono: Yup.string().required("El Teléfono es obligatorio"),
+    ciudad: Yup.string().required("La Ciudad es obligatoria"),
+    municipio: Yup.string().required("El Municipio es obligatorio"),
+    barrio: Yup.string().required("El Barrio es obligatorio"),
     email: Yup.string().email("Email inválido").required("El email es obligatorio"),
     confirmarEmail: Yup.string()
-        .oneOf([Yup.ref('email')], 'Los emails deben coincidir')
+        .oneOf([Yup.ref('email')], 'Los Emails deben coincidir')
         .required('Confirma tu email'),
     primeraVez: Yup.string().oneOf(['si', 'no']).required()
 });
@@ -39,7 +39,7 @@ export const Formulario: React.FC = () => {
         initialValues: {
             nombre: "", primerApellido: "", segundoApellido: "",
             telefono: "", ciudad: "", municipio: "", barrio: "",
-            invitadoPor: "", primeraVez: "si", email: "", confirmarEmail: ""
+            invitadoPor: "", primeraVez: "", email: "", confirmarEmail: ""
         },
         validationSchema,
         onSubmit: async (values) => {
@@ -104,7 +104,7 @@ export const Formulario: React.FC = () => {
                 <Container sx={{ maxWidth: '650px !important', mt: 8 }}> 
                     <Paper sx={{ p: 4, backgroundColor: '#121212', borderRadius: 4, border: '1px solid #333' }}>
                         <Typography variant="h5" sx={{ mb: 3, fontWeight: 'bold', textAlign: 'center', color: 'white' }}>
-                            REGISTRO DE ASISTENCIA
+                            REGISTRO DE ASISTENCIA A 5G
                         </Typography>
 
                         <form onSubmit={formik.handleSubmit} autoComplete="off">
@@ -116,14 +116,14 @@ export const Formulario: React.FC = () => {
                                 {renderTextField("ciudad", "Ciudad", 6)}
                                 {renderTextField("municipio", "Municipio", 6)}
                                 {renderTextField("barrio", "Barrio", 6)}
-                                {renderTextField("invitadoPor", "Invitado Por", 6)}
+                                {renderTextField("invitadoPor", "Invitado Por (opcional)", 6)}
                                 {renderTextField("email", "Email", 6)}
                                 {renderTextField("confirmarEmail", "Confirmar Email", 6)}
 
                                 <Box sx={{ width: '100%', px: 1, mb: 2 }}>
                                     <FormControl component="fieldset">
                                         <FormLabel component="legend" sx={{ color: '#aaa', mb: 1 }}>
-                                            ¿Es tu primera vez?
+                                            ¿Es tu primera vez En La Iglesia?
                                         </FormLabel>
                                         <RadioGroup
                                             row
