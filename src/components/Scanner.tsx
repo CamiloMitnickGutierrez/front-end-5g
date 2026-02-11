@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { Html5QrcodeScanner } from "html5-qrcode";
+// Importamos la clase base para mayor control
+import { Html5Qrcode } from "html5-qrcode"; 
 import { 
   Box, Paper, TextField, Button, Typography, 
   Container, Stack, ThemeProvider, createTheme, 
@@ -29,10 +30,10 @@ export const Scanner = () => {
   const [totalIngresos, setTotalIngresos] = useState(0);
   
   const ultimoQrRef = useRef<{ id: string; timestamp: number } | null>(null);
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
 
   const PIN_CORRECTO = "2026";
-  const COOLDOWN_MS = 2500; // Reducido ligeramente para mayor agilidad en fila
+  const COOLDOWN_MS = 3000;
 
   const actualizarConteo = async () => {
     try {
@@ -61,44 +62,49 @@ export const Scanner = () => {
   };
 
   useEffect(() => {
-    if (isAuthenticated && !scannerRef.current) {
+    if (isAuthenticated) {
       actualizarConteo();
 
-      // Cálculo dinámico del cuadro de escaneo para dispositivos pequeños y grandes
-      const qrBoxSize = (viewWidth: number) => {
-        const size = viewWidth < 600 ? viewWidth * 0.7 : 300;
-        return { width: size, height: size };
-      };
+      // Inicializamos la instancia en el div "reader"
+      const scanner = new Html5Qrcode("reader");
+      html5QrCodeRef.current = scanner;
 
       const config = { 
-        fps: 25, // Más FPS para capturas más rápidas
-        qrbox: qrBoxSize, 
-        aspectRatio: 1.0,
-        videoConstraints: {
-          // CAMBIO CLAVE: "environment" sin "exact" para máxima compatibilidad
-          facingMode: "environment",
-          // Sugerimos resolución para evitar lag en dispositivos gama media
-          width: { ideal: 640 },
-          height: { ideal: 640 }
-        },
-        rememberLastUsedCamera: true,
-        showTorchButtonIfSupported: true,
-        showZoomSliderIfSupported: true // Ayuda en iPhones con cámaras múltiples
+        fps: 25, 
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0
       };
 
-      scannerRef.current = new Html5QrcodeScanner("reader", config, false);
+      const startCamera = async () => {
+        try {
+          // Intentamos forzar cámara trasera directamente
+          await scanner.start(
+            { facingMode: "environment" },
+            config,
+            (text) => validarAcceso(text),
+            () => {} // Ignorar errores de escaneo fallido (no lectura)
+          );
+        } catch (err) {
+          console.error("Error iniciando cámara trasera:", err);
+          // Fallback por si el dispositivo tiene nombres de cámara raros
+          try {
+            await scanner.start({ facingMode: "user" }, config, (text) => validarAcceso(text), () => {});
+          } catch (e) {
+            console.error("Error crítico de cámara:", e);
+          }
+        }
+      };
 
-      scannerRef.current.render(
-        (text) => validarAcceso(text),
-        () => { /* Lectura silenciosa */ }
-      );
+      startCamera();
     }
 
     return () => {
-      if (scannerRef.current) {
-        scannerRef.current.clear().then(() => {
-            scannerRef.current = null;
-        }).catch(e => console.error("Cleanup error:", e));
+      if (html5QrCodeRef.current) {
+        if (html5QrCodeRef.current.isScanning) {
+          html5QrCodeRef.current.stop().then(() => {
+            html5QrCodeRef.current = null;
+          }).catch(e => console.error("Error al detener:", e));
+        }
       }
     };
   }, [isAuthenticated]);
@@ -116,15 +122,12 @@ export const Scanner = () => {
     
     try {
       const data = await validarAccesoService(id);
-      
-      // Feedback Táctil (Solo Android, iOS requiere interacción previa)
-      if (navigator.vibrate) navigator.vibrate(150);
-      
+      if (navigator.vibrate) navigator.vibrate(200);
       setStatus('success');
       setMessage(data.message || "Acceso Concedido");
       actualizarConteo(); 
     } catch (error: any) {
-      if (navigator.vibrate) navigator.vibrate([100, 50, 100]); // Vibración de error
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
       setStatus('error');
       setMessage(error || "Error al validar");
     } finally {
@@ -132,7 +135,7 @@ export const Scanner = () => {
       setTimeout(() => {
         setStatus('idle');
         setMessage("");
-      }, 3000);
+      }, 3500);
     }
   };
 
@@ -268,61 +271,45 @@ export const Scanner = () => {
           </Container>
         </Box>
       ) : (
-        <Box sx={{ minHeight: '100vh', bgcolor: '#000', py: { xs: 2, md: 4 } }}>
+        <Box sx={{ minHeight: '100vh', bgcolor: '#000', py: 4 }}>
           <Container maxWidth="sm">
-            <Stack spacing={3}>
+            <Stack spacing={3} alignItems="center">
               
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 1 }}>
-                <Typography variant="h6" fontWeight="bold" color="primary">SCANNER</Typography>
-                <Chip 
-                  icon={<PeopleIcon />} 
-                  label={`INGRESOS: ${totalIngresos}`} 
-                  color="primary"
-                  variant="filled"
-                  sx={{ fontWeight: '900', fontSize: '1rem' }}
-                />
+              <Box sx={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2 }}>
+                <Typography variant="h6" fontWeight="bold" sx={{ color: '#90caf9' }}>SCANNER</Typography>
+                <Chip icon={<PeopleIcon />} label={`INGRESOS: ${totalIngresos}`} color="primary" variant="outlined" />
               </Box>
 
-              <Box sx={{ position: 'relative', width: '100%', overflow: 'hidden', borderRadius: 8 }}>
+              <Box sx={{ position: 'relative', width: '90%', maxWidth: '350px', lineHeight: 0 }}>
                 <Paper sx={{ 
                   overflow: 'hidden', 
-                  borderRadius: 8, 
-                  border: '5px solid',
-                  borderColor: status === 'success' ? 'success.main' : status === 'error' ? 'error.main' : '#222',
-                  transition: 'all 0.2s ease-in-out',
-                  bgcolor: '#000'
+                  borderRadius: '40px', // Redondeado como en tu imagen
+                  border: '4px solid',
+                  borderColor: status === 'success' ? 'success.main' : status === 'error' ? 'error.main' : '#333',
+                  bgcolor: '#000',
+                  // Esto fuerza a que el video se vea bien dentro del contenedor
+                  '& #reader video': { objectFit: 'cover !important' }
                 }}>
                   <div id="reader" style={{ width: '100%' }}></div>
                 </Paper>
 
-                {/* OVERLAY UNIVERSAL */}
+                {/* OVERLAY DE ESTADO */}
                 <Fade in={status !== 'idle'}>
                   <Box sx={{
                     position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-                    bgcolor: status === 'success' ? 'rgba(46, 125, 50, 0.96)' : 'rgba(211, 47, 47, 0.96)',
+                    bgcolor: status === 'success' ? 'rgba(46, 125, 50, 0.95)' : 'rgba(211, 47, 47, 0.95)',
                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                    zIndex: 20, textAlign: 'center', p: 3, color: 'white'
+                    borderRadius: '40px', zIndex: 10, textAlign: 'center', p: 3, color: 'white'
                   }}>
-                    <Typography variant="h1" sx={{ fontSize: '8rem', fontWeight: '900', lineHeight: 1 }}>
-                      {status === 'success' ? '✓' : '✕'}
-                    </Typography>
-                    <Typography variant="h3" fontWeight="900" sx={{ mb: 1 }}>
-                      {status === 'success' ? 'PASA' : 'NO PASA'}
-                    </Typography>
-                    <Typography variant="h6" sx={{ opacity: 0.9 }}>
-                      {message}
-                    </Typography>
+                    <Typography variant="h1" fontWeight="900">{status === 'success' ? '✓' : '✕'}</Typography>
+                    <Typography variant="h4" fontWeight="bold">{status === 'success' ? 'PASA' : 'NO PASA'}</Typography>
+                    <Typography variant="h6" sx={{ mt: 1 }}>{message}</Typography>
                   </Box>
                 </Fade>
               </Box>
 
-              <Box sx={{ textAlign: 'center' }}>
-                {loading ? <CircularProgress size={30} /> : (
-                  <Button onClick={actualizarConteo} variant="text" sx={{ color: '#444' }}>
-                    Sincronizar Datos
-                  </Button>
-                )}
-              </Box>
+              {loading && <CircularProgress color="primary" />}
+              <Button onClick={actualizarConteo} variant="text" sx={{ color: '#444' }}>Sincronizar Datos</Button>
             </Stack>
           </Container>
         </Box>
