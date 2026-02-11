@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-// Importamos la clase base para mayor control
 import { Html5Qrcode } from "html5-qrcode"; 
 import { 
   Box, Paper, TextField, Button, Typography, 
@@ -44,14 +43,6 @@ export const Scanner = () => {
     }
   };
 
-  useEffect(() => {
-    const handlePopState = () => {
-      window.location.href = '/';
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
   const handleLogin = () => {
     if (pin === PIN_CORRECTO) {
       setIsAuthenticated(true);
@@ -64,8 +55,6 @@ export const Scanner = () => {
   useEffect(() => {
     if (isAuthenticated) {
       actualizarConteo();
-
-      // Inicializamos la instancia en el div "reader"
       const scanner = new Html5Qrcode("reader");
       html5QrCodeRef.current = scanner;
 
@@ -77,16 +66,13 @@ export const Scanner = () => {
 
       const startCamera = async () => {
         try {
-          // Intentamos forzar cámara trasera directamente
           await scanner.start(
             { facingMode: "environment" },
             config,
             (text) => validarAcceso(text),
-            () => {} // Ignorar errores de escaneo fallido (no lectura)
+            () => {} 
           );
         } catch (err) {
-          console.error("Error iniciando cámara trasera:", err);
-          // Fallback por si el dispositivo tiene nombres de cámara raros
           try {
             await scanner.start({ facingMode: "user" }, config, (text) => validarAcceso(text), () => {});
           } catch (e) {
@@ -94,16 +80,13 @@ export const Scanner = () => {
           }
         }
       };
-
       startCamera();
     }
 
     return () => {
       if (html5QrCodeRef.current) {
         if (html5QrCodeRef.current.isScanning) {
-          html5QrCodeRef.current.stop().then(() => {
-            html5QrCodeRef.current = null;
-          }).catch(e => console.error("Error al detener:", e));
+          html5QrCodeRef.current.stop().catch(e => console.error(e));
         }
       }
     };
@@ -117,9 +100,9 @@ export const Scanner = () => {
       return;
     }
 
-    // Pausar el escáner para evitar lecturas repetidas
+    // CORRECCIÓN 1: Pausar sin congelar el video (false)
     if (html5QrCodeRef.current && html5QrCodeRef.current.isScanning) {
-      html5QrCodeRef.current.pause(true);
+      html5QrCodeRef.current.pause(false); 
     }
 
     ultimoQrRef.current = { id, timestamp: ahora };
@@ -129,17 +112,9 @@ export const Scanner = () => {
       const data = await validarAccesoService(id);
       if (navigator.vibrate) navigator.vibrate(200);
       
-      // Obtener fecha y hora actual
       const fecha = new Date();
-      const fechaFormateada = fecha.toLocaleDateString('es-ES', { 
-        day: '2-digit', 
-        month: '2-digit', 
-        year: 'numeric' 
-      });
-      const horaFormateada = fecha.toLocaleTimeString('es-ES', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      });
+      const fechaFormateada = fecha.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const horaFormateada = fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
       
       setStatus('success');
       setMessage(`¡Bienvenido!\n${data.message || ""}\n${fechaFormateada} - ${horaFormateada}`);
@@ -150,14 +125,17 @@ export const Scanner = () => {
       setMessage(error || "Error al validar");
     } finally {
       setLoading(false);
+      
+      // CORRECCIÓN 2: Reactivación automática tras el mensaje
       setTimeout(() => {
         setStatus('idle');
         setMessage("");
-        // Reanudar el escáner después de mostrar el resultado
-        if (html5QrCodeRef.current && html5QrCodeRef.current.getState() === 2) {
+        
+        // Solo reanuda si el escáner existe y está efectivamente pausado (estado 3)
+        if (html5QrCodeRef.current && html5QrCodeRef.current.getState() === 3) {
           html5QrCodeRef.current.resume();
         }
-      }, 3500);
+      }, 3500); 
     }
   };
 
@@ -166,128 +144,21 @@ export const Scanner = () => {
       <CssBaseline />
       
       {!isAuthenticated ? (
-        <Box sx={{ 
-          height: '100vh', 
-          width: '100vw', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #0a0a0a 100%)',
-          position: 'fixed', 
-          px: 2 
-        }}>
+        <Box sx={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #0a0a0a 100%)', px: 2 }}>
           <Container maxWidth="xs">
-            <Paper 
-              elevation={24} 
-              sx={{ 
-                p: 5, 
-                textAlign: 'center', 
-                background: 'linear-gradient(145deg, #1a1a1a 0%, #0f0f0f 100%)',
-                border: '2px solid',
-                borderColor: 'primary.main',
-                borderRadius: 1,
-                position: 'relative',
-                overflow: 'hidden',
-                boxShadow: '0 8px 32px rgba(144, 202, 249, 0.2)',
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: '4px',
-                  background: 'linear-gradient(90deg, transparent, #90caf9, transparent)',
-                }
-              }}
-            >
+            <Paper elevation={24} sx={{ p: 5, textAlign: 'center', background: 'linear-gradient(145deg, #1a1a1a 0%, #0f0f0f 100%)', border: '2px solid', borderColor: 'primary.main', borderRadius: 1 }}>
               <Stack spacing={3.5} alignItems="center">
-                <Box sx={{ position: 'relative' }}>
-                  <Avatar sx={{ 
-                    bgcolor: 'primary.main', 
-                    width: 72, 
-                    height: 72,
-                    borderRadius: 1,
-                    boxShadow: '0 4px 20px rgba(144, 202, 249, 0.4)'
-                  }}>
-                    <LockOutlinedIcon fontSize="large" />
-                  </Avatar>
-                </Box>
-                
-                <Box>
-                  <Typography variant="h4" fontWeight="900" color="primary.main" sx={{ mb: 0.5 }}>
-                    STAFF LOGIN
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Ingresa tu PIN de acceso
-                  </Typography>
-                </Box>
-
+                <Avatar sx={{ bgcolor: 'primary.main', width: 72, height: 72, borderRadius: 1 }}><LockOutlinedIcon fontSize="large" /></Avatar>
+                <Typography variant="h4" fontWeight="900" color="primary.main">STAFF LOGIN</Typography>
                 <TextField
                   fullWidth
                   type="password"
-                  label="PIN DE SEGURIDAD"
                   value={pin}
                   onChange={(e) => setPin(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-                  slotProps={{
-                    htmlInput: { 
-                      inputMode: 'numeric', 
-                      style: { 
-                        textAlign: 'center', 
-                        fontSize: '2.2rem', 
-                        letterSpacing: '1rem',
-                        fontWeight: '700'
-                      }
-                    }
-                  }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 1,
-                      bgcolor: 'rgba(144, 202, 249, 0.05)',
-                      '& fieldset': {
-                        borderColor: '#333',
-                        borderWidth: 2,
-                      },
-                      '&:hover fieldset': {
-                        borderColor: 'primary.main',
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: 'primary.main',
-                        borderWidth: 2,
-                      },
-                    },
-                    '& .MuiInputLabel-root': {
-                      fontSize: '0.9rem',
-                      fontWeight: '600',
-                    }
-                  }}
+                  slotProps={{ htmlInput: { inputMode: 'numeric', style: { textAlign: 'center', fontSize: '2.2rem', letterSpacing: '1rem', fontWeight: '700' } } }}
                 />
-                
-                <Button 
-                  fullWidth 
-                  variant="contained" 
-                  size="large" 
-                  onClick={handleLogin} 
-                  sx={{ 
-                    height: 60, 
-                    fontSize: '1.1rem',
-                    fontWeight: '900',
-                    borderRadius: 1,
-                    background: 'linear-gradient(135deg, #90caf9 0%, #64b5f6 100%)',
-                    boxShadow: '0 4px 15px rgba(144, 202, 249, 0.3)',
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 6px 20px rgba(144, 202, 249, 0.4)',
-                      background: 'linear-gradient(135deg, #64b5f6 0%, #42a5f5 100%)',
-                    },
-                    '&:active': {
-                      transform: 'translateY(0px)',
-                    }
-                  }}
-                >
-                  DESBLOQUEAR
-                </Button>
+                <Button fullWidth variant="contained" size="large" onClick={handleLogin} sx={{ height: 60, fontWeight: '900' }}>DESBLOQUEAR</Button>
               </Stack>
             </Paper>
           </Container>
@@ -296,26 +167,23 @@ export const Scanner = () => {
         <Box sx={{ minHeight: '100vh', bgcolor: '#000', py: 4 }}>
           <Container maxWidth="sm">
             <Stack spacing={3} alignItems="center">
-              
               <Box sx={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2 }}>
                 <Typography variant="h6" fontWeight="bold" sx={{ color: '#90caf9' }}>SCANNER</Typography>
                 <Chip icon={<PeopleIcon />} label={`INGRESOS: ${totalIngresos}`} color="primary" variant="outlined" />
               </Box>
 
-              <Box sx={{ position: 'relative', width: '90%', maxWidth: '350px', lineHeight: 0 }}>
+              <Box sx={{ position: 'relative', width: '90%', maxWidth: '350px' }}>
                 <Paper sx={{ 
                   overflow: 'hidden', 
-                  borderRadius: '40px', // Redondeado como en tu imagen
+                  borderRadius: '40px', 
                   border: '4px solid',
                   borderColor: status === 'success' ? 'success.main' : status === 'error' ? 'error.main' : '#333',
                   bgcolor: '#000',
-                  // Esto fuerza a que el video se vea bien dentro del contenedor
                   '& #reader video': { objectFit: 'cover !important' }
                 }}>
                   <div id="reader" style={{ width: '100%' }}></div>
                 </Paper>
 
-                {/* OVERLAY DE ESTADO */}
                 <Fade in={status !== 'idle'}>
                   <Box sx={{
                     position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
