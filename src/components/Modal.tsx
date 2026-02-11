@@ -26,7 +26,7 @@ export const ModalExito: React.FC<ModalExitoProps> = ({ open, onClose, datos, on
     // --- NUEVA FUNCIÓN PARA IPHONE / MÓVILES ---
     const manejarDescargaOCompartir = async () => {
         // Verificamos si es un móvil con capacidad de compartir (iOS/Android)
-        if (navigator.share && navigator.canShare) {
+        if ('share' in navigator && 'canShare' in navigator) {
             try {
                 const response = await fetch(datos.qrUrl);
                 const blob = await response.blob();
@@ -130,7 +130,7 @@ export const ModalExito: React.FC<ModalExitoProps> = ({ open, onClose, datos, on
                         variant="contained" 
                         fullWidth 
                         onClick={manejarDescargaOCompartir} // USAMOS LA NUEVA FUNCIÓN
-                        startIcon={navigator.share ? <ShareIcon /> : null}
+                        startIcon={'share' in navigator ? <ShareIcon /> : null}
                         sx={{ 
                             backgroundColor: '#fff', 
                             color: '#000', 
@@ -138,7 +138,7 @@ export const ModalExito: React.FC<ModalExitoProps> = ({ open, onClose, datos, on
                             '&:hover': { backgroundColor: '#eee' } 
                         }}
                     >
-                        {navigator.share ? "GUARDAR EN FOTOS" : "DESCARGAR PDF"}
+                        {'share' in navigator ? "GUARDAR EN FOTOS" : "DESCARGAR PDF"}
                     </Button>
 
                     <Button 
@@ -167,7 +167,7 @@ export const ModalExito: React.FC<ModalExitoProps> = ({ open, onClose, datos, on
                 </Stack>
                 
                 {/* Texto de ayuda solo para móviles */}
-                {navigator.share && (
+                {'share' in navigator && (
                     <Typography variant="caption" sx={{ color: '#666', display: 'block', mt: 1 }}>
                         También puedes mantener presionada la imagen para guardarla.
                     </Typography>
