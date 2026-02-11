@@ -6,15 +6,16 @@ import {
   CssBaseline, Fade, CircularProgress, Avatar, Chip 
 } from "@mui/material";
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
-import PeopleIcon from '@mui/icons-material/People'; // Icono para el contador
-import { validarAccesoService, obtenerConteoService } from "../api/validate.service"; // Asumo que crearás este service
+import PeopleIcon from '@mui/icons-material/People';
+import { validarAccesoService, obtenerConteoService } from "../api/validate.service";
 
 const staffTheme = createTheme({
   palette: {
     mode: 'dark',
     primary: { main: '#90caf9' },
     background: { default: '#0a0a0a', paper: '#1a1a1a' },
+    success: { main: '#2e7d32' },
+    error: { main: '#d32f2f' },
   },
   shape: { borderRadius: 16 }
 });
@@ -25,17 +26,14 @@ export const Scanner = () => {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<'success' | 'error' | 'idle'>('idle');
   const [message, setMessage] = useState("");
-  
-  // --- Estado para el conteo ---
   const [totalIngresos, setTotalIngresos] = useState(0);
   
-  // --- Sistema de cooldown con useRef para evitar escaneos duplicados ---
   const ultimoQrRef = useRef<{ id: string; timestamp: number } | null>(null);
+  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
 
   const PIN_CORRECTO = "2026";
-  const COOLDOWN_MS = 3000; // 3 segundos de espera entre escaneos del mismo QR
+  const COOLDOWN_MS = 2500; // Reducido ligeramente para mayor agilidad en fila
 
-  // Función para traer el conteo del servidor
   const actualizarConteo = async () => {
     try {
       const data = await obtenerConteoService();
@@ -47,10 +45,8 @@ export const Scanner = () => {
 
   useEffect(() => {
     const handlePopState = () => {
-      window.history.pushState(null, '', window.location.pathname);
-      window.location.replace('/');
+      window.location.href = '/';
     };
-    window.history.pushState(null, '', window.location.pathname);
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
@@ -65,56 +61,70 @@ export const Scanner = () => {
   };
 
   useEffect(() => {
-    let scanner: Html5QrcodeScanner | null = null;
-
-    if (isAuthenticated) {
-      // Cargamos el conteo inicial al entrar
+    if (isAuthenticated && !scannerRef.current) {
       actualizarConteo();
 
-      // QR Box responsive según el ancho de pantalla
-      const qrBoxSize = window.innerWidth < 400 ? 220 : window.innerWidth < 600 ? 250 : 280;
+      // Cálculo dinámico del cuadro de escaneo para dispositivos pequeños y grandes
+      const qrBoxSize = (viewWidth: number) => {
+        const size = viewWidth < 600 ? viewWidth * 0.7 : 300;
+        return { width: size, height: size };
+      };
 
-      scanner = new Html5QrcodeScanner(
-        "reader", 
-        { fps: 20, qrbox: { width: qrBoxSize, height: qrBoxSize }, aspectRatio: 1.0 }, 
-        false
-      );
+      const config = { 
+        fps: 25, // Más FPS para capturas más rápidas
+        qrbox: qrBoxSize, 
+        aspectRatio: 1.0,
+        videoConstraints: {
+          // CAMBIO CLAVE: "environment" sin "exact" para máxima compatibilidad
+          facingMode: "environment",
+          // Sugerimos resolución para evitar lag en dispositivos gama media
+          width: { ideal: 640 },
+          height: { ideal: 640 }
+        },
+        rememberLastUsedCamera: true,
+        showTorchButtonIfSupported: true,
+        showZoomSliderIfSupported: true // Ayuda en iPhones con cámaras múltiples
+      };
 
-      scanner.render(
-        (text) => { if (!loading) validarAcceso(text); },
-        (_error) => { }
+      scannerRef.current = new Html5QrcodeScanner("reader", config, false);
+
+      scannerRef.current.render(
+        (text) => validarAcceso(text),
+        () => { /* Lectura silenciosa */ }
       );
     }
 
     return () => {
-      if (scanner) {
-        scanner.clear().catch((e) => console.error("Error al limpiar scanner", e));
+      if (scannerRef.current) {
+        scannerRef.current.clear().then(() => {
+            scannerRef.current = null;
+        }).catch(e => console.error("Cleanup error:", e));
       }
     };
-  }, [isAuthenticated]); // Eliminamos 'loading' para que el scanner permanezca activo
+  }, [isAuthenticated]);
 
   const validarAcceso = async (id: string) => {
-    // Verificar si es el mismo QR escaneado recientemente usando ref
     const ahora = Date.now();
     const ultimo = ultimoQrRef.current;
     
-    if (ultimo && ultimo.id === id && (ahora - ultimo.timestamp) < COOLDOWN_MS) {
-      return; // Ignorar escaneo duplicado
+    if (loading || (ultimo && ultimo.id === id && (ahora - ultimo.timestamp) < COOLDOWN_MS)) {
+      return;
     }
 
-    // Actualizar el último QR escaneado en la ref
     ultimoQrRef.current = { id, timestamp: ahora };
-    
     setLoading(true);
+    
     try {
       const data = await validarAccesoService(id);
+      
+      // Feedback Táctil (Solo Android, iOS requiere interacción previa)
+      if (navigator.vibrate) navigator.vibrate(150);
+      
       setStatus('success');
       setMessage(data.message || "Acceso Concedido");
-      
-      // Actualizamos el contador inmediatamente después de un éxito
       actualizarConteo(); 
-
     } catch (error: any) {
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100]); // Vibración de error
       setStatus('error');
       setMessage(error || "Error al validar");
     } finally {
@@ -122,7 +132,7 @@ export const Scanner = () => {
       setTimeout(() => {
         setStatus('idle');
         setMessage("");
-      }, 4000);
+      }, 3000);
     }
   };
 
@@ -132,34 +142,98 @@ export const Scanner = () => {
       
       {!isAuthenticated ? (
         <Box sx={{ 
-          height: '100vh', width: '100vw', display: 'flex', 
-          alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default',
-          position: 'fixed', top: 0, left: 0, zIndex: 9999,
-          px: 2 // Padding horizontal para móviles
+          height: '100vh', 
+          width: '100vw', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #0a0a0a 100%)',
+          position: 'fixed', 
+          px: 2 
         }}>
           <Container maxWidth="xs">
-            <Paper elevation={12} sx={{ p: { xs: 3, sm: 4 }, textAlign: 'center', border: '1px solid #333' }}>
-              <Stack spacing={3} alignItems="center">
-                <Avatar sx={{ bgcolor: 'primary.main', width: { xs: 48, sm: 56 }, height: { xs: 48, sm: 56 } }}>
-                  <LockOutlinedIcon />
-                </Avatar>
-                <Box>
-                  <Typography variant="h5" fontWeight="bold" sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>Acceso Para Staff</Typography>
-                  <Typography variant="body2" color="text.secondary">Ingrese el PIN de seguridad</Typography>
+            <Paper 
+              elevation={24} 
+              sx={{ 
+                p: 5, 
+                textAlign: 'center', 
+                background: 'linear-gradient(145deg, #1a1a1a 0%, #0f0f0f 100%)',
+                border: '2px solid',
+                borderColor: 'primary.main',
+                borderRadius: 1,
+                position: 'relative',
+                overflow: 'hidden',
+                boxShadow: '0 8px 32px rgba(144, 202, 249, 0.2)',
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: '4px',
+                  background: 'linear-gradient(90deg, transparent, #90caf9, transparent)',
+                }
+              }}
+            >
+              <Stack spacing={3.5} alignItems="center">
+                <Box sx={{ position: 'relative' }}>
+                  <Avatar sx={{ 
+                    bgcolor: 'primary.main', 
+                    width: 72, 
+                    height: 72,
+                    borderRadius: 1,
+                    boxShadow: '0 4px 20px rgba(144, 202, 249, 0.4)'
+                  }}>
+                    <LockOutlinedIcon fontSize="large" />
+                  </Avatar>
                 </Box>
                 
+                <Box>
+                  <Typography variant="h4" fontWeight="900" color="primary.main" sx={{ mb: 0.5 }}>
+                    STAFF LOGIN
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Ingresa tu PIN de acceso
+                  </Typography>
+                </Box>
+
                 <TextField
                   fullWidth
                   type="password"
-                  label="PIN"
+                  label="PIN DE SEGURIDAD"
                   value={pin}
                   onChange={(e) => setPin(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
                   slotProps={{
                     htmlInput: { 
                       inputMode: 'numeric', 
-                      pattern: '[0-9]*',
-                      style: { textAlign: 'center', fontSize: '1.5rem', letterSpacing: '0.5rem' }
+                      style: { 
+                        textAlign: 'center', 
+                        fontSize: '2.2rem', 
+                        letterSpacing: '1rem',
+                        fontWeight: '700'
+                      }
+                    }
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 1,
+                      bgcolor: 'rgba(144, 202, 249, 0.05)',
+                      '& fieldset': {
+                        borderColor: '#333',
+                        borderWidth: 2,
+                      },
+                      '&:hover fieldset': {
+                        borderColor: 'primary.main',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: 'primary.main',
+                        borderWidth: 2,
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      fontSize: '0.9rem',
+                      fontWeight: '600',
                     }
                   }}
                 />
@@ -168,8 +242,24 @@ export const Scanner = () => {
                   fullWidth 
                   variant="contained" 
                   size="large" 
-                  onClick={handleLogin}
-                  sx={{ py: 1.5, fontWeight: 'bold' }}
+                  onClick={handleLogin} 
+                  sx={{ 
+                    height: 60, 
+                    fontSize: '1.1rem',
+                    fontWeight: '900',
+                    borderRadius: 1,
+                    background: 'linear-gradient(135deg, #90caf9 0%, #64b5f6 100%)',
+                    boxShadow: '0 4px 15px rgba(144, 202, 249, 0.3)',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 6px 20px rgba(144, 202, 249, 0.4)',
+                      background: 'linear-gradient(135deg, #64b5f6 0%, #42a5f5 100%)',
+                    },
+                    '&:active': {
+                      transform: 'translateY(0px)',
+                    }
+                  }}
                 >
                   DESBLOQUEAR
                 </Button>
@@ -178,109 +268,61 @@ export const Scanner = () => {
           </Container>
         </Box>
       ) : (
-        <Box sx={{ minHeight: '100vh', bgcolor: '#000', py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 0 } }}>
+        <Box sx={{ minHeight: '100vh', bgcolor: '#000', py: { xs: 2, md: 4 } }}>
           <Container maxWidth="sm">
-            <Stack spacing={{ xs: 2, sm: 3 }} alignItems="center">
+            <Stack spacing={3}>
               
-              {/* --- HEADER CON CONTADOR --- */}
-              <Box sx={{ 
-                width: '100%', 
-                display: 'flex', 
-                flexDirection: { xs: 'column', sm: 'row' },
-                justifyContent: 'space-between', 
-                alignItems: { xs: 'stretch', sm: 'center' },
-                gap: { xs: 1.5, sm: 0 }
-              }}>
-                <Typography 
-                  variant="h6" 
-                  fontWeight="bold" 
-                  sx={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: 1,
-                    fontSize: { xs: '1.1rem', sm: '1.25rem' },
-                    justifyContent: { xs: 'center', sm: 'flex-start' }
-                  }}
-                >
-                  <QrCodeScannerIcon color="primary" /> SCANNER
-                </Typography>
-                
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 1 }}>
+                <Typography variant="h6" fontWeight="bold" color="primary">SCANNER</Typography>
                 <Chip 
                   icon={<PeopleIcon />} 
-                  label={`INGRESOS: ${totalIngresos} / 500`} 
+                  label={`INGRESOS: ${totalIngresos}`} 
                   color="primary"
-                  variant="outlined"
-                  sx={{ 
-                    fontWeight: 'bold', 
-                    fontSize: { xs: '0.85rem', sm: '1rem' }, 
-                    py: { xs: 1.5, sm: 2 },
-                    width: { xs: '100%', sm: 'auto' }
-                  }}
+                  variant="filled"
+                  sx={{ fontWeight: '900', fontSize: '1rem' }}
                 />
               </Box>
 
-              <Box sx={{ position: 'relative', width: '100%' }}>
+              <Box sx={{ position: 'relative', width: '100%', overflow: 'hidden', borderRadius: 8 }}>
                 <Paper sx={{ 
                   overflow: 'hidden', 
-                  borderRadius: { xs: 4, sm: 6 }, 
-                  border: '4px solid',
-                  borderColor: status === 'success' ? 'success.main' : status === 'error' ? 'error.main' : '#333',
-                  transition: 'border-color 0.3s ease', 
-                  bgcolor: '#111'
+                  borderRadius: 8, 
+                  border: '5px solid',
+                  borderColor: status === 'success' ? 'success.main' : status === 'error' ? 'error.main' : '#222',
+                  transition: 'all 0.2s ease-in-out',
+                  bgcolor: '#000'
                 }}>
                   <div id="reader" style={{ width: '100%' }}></div>
                 </Paper>
 
-                {status !== 'idle' && (
-                  <Fade in={true}>
-                    <Box sx={{
-                      position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-                      bgcolor: status === 'success' ? 'rgba(46, 125, 50, 0.95)' : 'rgba(211, 47, 47, 0.95)',
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                      borderRadius: { xs: 4, sm: 6 }, 
-                      zIndex: 10, 
-                      textAlign: 'center', 
-                      p: { xs: 2, sm: 3 }, 
-                      color: 'white'
-                    }}>
-                      <Typography 
-                        variant="h2" 
-                        fontWeight="900"
-                        sx={{ fontSize: { xs: '3rem', sm: '3.75rem' } }}
-                      >
-                        {status === 'success' ? '✓' : '✕'}
-                      </Typography>
-                      <Typography 
-                        variant="h4" 
-                        fontWeight="bold"
-                        sx={{ fontSize: { xs: '1.5rem', sm: '2.125rem' } }}
-                      >
-                        {status === 'success' ? 'PASA' : 'NO PASA'}
-                      </Typography>
-                      <Typography 
-                        variant="h6" 
-                        sx={{ mt: 1, fontSize: { xs: '0.9rem', sm: '1.25rem' } }}
-                      >
-                        {message}
-                      </Typography>
-                    </Box>
-                  </Fade>
-                )}
+                {/* OVERLAY UNIVERSAL */}
+                <Fade in={status !== 'idle'}>
+                  <Box sx={{
+                    position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+                    bgcolor: status === 'success' ? 'rgba(46, 125, 50, 0.96)' : 'rgba(211, 47, 47, 0.96)',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    zIndex: 20, textAlign: 'center', p: 3, color: 'white'
+                  }}>
+                    <Typography variant="h1" sx={{ fontSize: '8rem', fontWeight: '900', lineHeight: 1 }}>
+                      {status === 'success' ? '✓' : '✕'}
+                    </Typography>
+                    <Typography variant="h3" fontWeight="900" sx={{ mb: 1 }}>
+                      {status === 'success' ? 'PASA' : 'NO PASA'}
+                    </Typography>
+                    <Typography variant="h6" sx={{ opacity: 0.9 }}>
+                      {message}
+                    </Typography>
+                  </Box>
+                </Fade>
               </Box>
 
-              {loading && <CircularProgress color="primary" sx={{ width: { xs: 40, sm: 48 }, height: { xs: 40, sm: 48 } }} />}
-              
-              {!loading && status === 'idle' && (
-                <Button 
-                  onClick={actualizarConteo} 
-                  variant="text" 
-                  size="small" 
-                  color="inherit" 
-                  sx={{ opacity: 0.5, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
-                >
-                  Actualizar conteo manualmente
-                </Button>
-              )}
+              <Box sx={{ textAlign: 'center' }}>
+                {loading ? <CircularProgress size={30} /> : (
+                  <Button onClick={actualizarConteo} variant="text" sx={{ color: '#444' }}>
+                    Sincronizar Datos
+                  </Button>
+                )}
+              </Box>
             </Stack>
           </Container>
         </Box>
