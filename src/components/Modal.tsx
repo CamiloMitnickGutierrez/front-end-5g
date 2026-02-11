@@ -6,8 +6,8 @@ import {
 } from "@mui/material";
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import CloseIcon from '@mui/icons-material/Close';
+import ShareIcon from '@mui/icons-material/Share'; // Icono nuevo
 import { jsPDF } from "jspdf";
-// CAMBIO: Importamos la función correcta para el correo
 import { enviarCorreoService } from "../api/email.service";
 
 interface ModalExitoProps {
@@ -23,6 +23,30 @@ export const ModalExito: React.FC<ModalExitoProps> = ({ open, onClose, datos, on
 
     if (!datos) return null;
 
+    // --- NUEVA FUNCIÓN PARA IPHONE / MÓVILES ---
+    const manejarDescargaOCompartir = async () => {
+        // Verificamos si es un móvil con capacidad de compartir (iOS/Android)
+        if (navigator.share && navigator.canShare) {
+            try {
+                const response = await fetch(datos.qrUrl);
+                const blob = await response.blob();
+                const file = new File([blob], `Ticket_${datos.nombre}.png`, { type: 'image/png' });
+
+                await navigator.share({
+                    files: [file],
+                    title: 'Mi Ticket Evento 5G',
+                    text: 'Aquí tienes mi código QR de acceso.',
+                });
+            } catch (error) {
+                console.error("Error al compartir:", error);
+                descargarPDF(); // Si falla el compartir, intentamos el PDF por defecto
+            }
+        } else {
+            // Si es PC, descargamos el PDF normalmente
+            descargarPDF();
+        }
+    };
+
     const descargarPDF = () => {
         const doc = new jsPDF();
         doc.setFontSize(22);
@@ -31,17 +55,13 @@ export const ModalExito: React.FC<ModalExitoProps> = ({ open, onClose, datos, on
         doc.text(`¡Hola, ${datos.nombre}!`, 20, 40);
         doc.setFontSize(12);
         doc.text("Presenta este código QR en la entrada del evento.", 20, 50);
-        
-        // Usamos PNG que es más compatible con los Base64 de códigos QR
         doc.addImage(datos.qrUrl, "PNG", 70, 65, 70, 70);
-        
         doc.save(`Ticket_${datos.nombre}.pdf`);
     };
 
     const manejarEnvioEmail = async () => {
         setEnviando(true);
         try {
-            // CAMBIO: Usamos enviarCorreoService en lugar de registrarAsistente
             await enviarCorreoService({
                 email: datos.email,
                 nombre: datos.nombre,
@@ -101,6 +121,7 @@ export const ModalExito: React.FC<ModalExitoProps> = ({ open, onClose, datos, on
                     mb: 3,
                     boxShadow: '0 0 20px rgba(255,255,255,0.1)'
                 }}>
+                    {/* Añadimos un pequeño aviso para iPhone */}
                     <img src={datos.qrUrl} alt="QR" style={{ width: 180, height: 180, display: 'block' }} />
                 </Box>
 
@@ -108,10 +129,16 @@ export const ModalExito: React.FC<ModalExitoProps> = ({ open, onClose, datos, on
                     <Button 
                         variant="contained" 
                         fullWidth 
-                        onClick={descargarPDF}
-                        sx={{ backgroundColor: '#fff', color: '#000', fontWeight: 'bold', '&:hover': { backgroundColor: '#eee' } }}
+                        onClick={manejarDescargaOCompartir} // USAMOS LA NUEVA FUNCIÓN
+                        startIcon={navigator.share ? <ShareIcon /> : null}
+                        sx={{ 
+                            backgroundColor: '#fff', 
+                            color: '#000', 
+                            fontWeight: 'bold', 
+                            '&:hover': { backgroundColor: '#eee' } 
+                        }}
                     >
-                        DESCARGAR PDF
+                        {navigator.share ? "GUARDAR EN FOTOS" : "DESCARGAR PDF"}
                     </Button>
 
                     <Button 
@@ -138,6 +165,13 @@ export const ModalExito: React.FC<ModalExitoProps> = ({ open, onClose, datos, on
                         SALIR
                     </Button>
                 </Stack>
+                
+                {/* Texto de ayuda solo para móviles */}
+                {navigator.share && (
+                    <Typography variant="caption" sx={{ color: '#666', display: 'block', mt: 1 }}>
+                        También puedes mantener presionada la imagen para guardarla.
+                    </Typography>
+                )}
             </DialogContent>
 
             <Snackbar
