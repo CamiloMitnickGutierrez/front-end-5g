@@ -117,14 +117,32 @@ export const Scanner = () => {
       return;
     }
 
+    // Pausar el escáner para evitar lecturas repetidas
+    if (html5QrCodeRef.current && html5QrCodeRef.current.isScanning) {
+      html5QrCodeRef.current.pause(true);
+    }
+
     ultimoQrRef.current = { id, timestamp: ahora };
     setLoading(true);
     
     try {
       const data = await validarAccesoService(id);
       if (navigator.vibrate) navigator.vibrate(200);
+      
+      // Obtener fecha y hora actual
+      const fecha = new Date();
+      const fechaFormateada = fecha.toLocaleDateString('es-ES', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric' 
+      });
+      const horaFormateada = fecha.toLocaleTimeString('es-ES', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+      
       setStatus('success');
-      setMessage(data.message || "Acceso Concedido");
+      setMessage(`¡Bienvenido!\n${data.message || ""}\n${fechaFormateada} - ${horaFormateada}`);
       actualizarConteo(); 
     } catch (error: any) {
       if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
@@ -135,6 +153,10 @@ export const Scanner = () => {
       setTimeout(() => {
         setStatus('idle');
         setMessage("");
+        // Reanudar el escáner después de mostrar el resultado
+        if (html5QrCodeRef.current && html5QrCodeRef.current.getState() === 2) {
+          html5QrCodeRef.current.resume();
+        }
       }, 3500);
     }
   };
@@ -303,7 +325,7 @@ export const Scanner = () => {
                   }}>
                     <Typography variant="h1" fontWeight="900">{status === 'success' ? '✓' : '✕'}</Typography>
                     <Typography variant="h4" fontWeight="bold">{status === 'success' ? 'PASA' : 'NO PASA'}</Typography>
-                    <Typography variant="h6" sx={{ mt: 1 }}>{message}</Typography>
+                    <Typography variant="h6" sx={{ mt: 1, whiteSpace: 'pre-line' }}>{message}</Typography>
                   </Box>
                 </Fade>
               </Box>
