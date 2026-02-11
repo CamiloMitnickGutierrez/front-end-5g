@@ -111,7 +111,7 @@ export const Formulario: React.FC = () => {
                             <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -1 }}>
                                 {renderTextField("nombre", "Nombre", 6)}
                                 {renderTextField("primerApellido", "Primer Apellido", 6)}
-                                {renderTextField("segundoApellido", "Segundo Apellido", 6)}
+                                {renderTextField("segundoApellido", "Segundo Apellido (opcional)", 6)}
                                 {renderTextField("telefono", "Teléfono", 6)}
                                 {renderTextField("ciudad", "Ciudad", 6)}
                                 {renderTextField("municipio", "Municipio", 6)}
