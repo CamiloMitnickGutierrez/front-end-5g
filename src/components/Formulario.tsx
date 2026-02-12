@@ -39,7 +39,7 @@ export const Formulario: React.FC = () => {
         initialValues: {
             nombre: "", primerApellido: "", segundoApellido: "",
             telefono: "", ciudad: "", municipio: "", barrio: "",
-            invitadoPor: "", primeraVez: "", email: "", confirmarEmail: ""
+            invitadoPor: "", primeraVez: "si", email: "", confirmarEmail: ""
         },
         validationSchema,
         onSubmit: async (values) => {
