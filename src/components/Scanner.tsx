@@ -116,9 +116,21 @@ export const Scanner = () => {
       const data = await validarAccesoService(id);
       if (navigator.vibrate) navigator.vibrate(200);
       
-      const fecha = new Date();
-      const fechaFormateada = fecha.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
-      const horaFormateada = fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+      // Usar el timestamp del servidor (UTC) si está disponible, sino usar hora local del cliente
+      const fecha = data.timestamp ? new Date(data.timestamp) : new Date();
+      
+      // Formatear en zona horaria de Colombia (America/Bogota) para consistencia con el backend
+      const fechaFormateada = fecha.toLocaleDateString('es-ES', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric',
+        timeZone: 'America/Bogota'
+      });
+      const horaFormateada = fecha.toLocaleTimeString('es-ES', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        timeZone: 'America/Bogota'
+      });
       
       setStatus('success');
       setMessage(`¡Bienvenido!\n${data.message || ""}\n${fechaFormateada} - ${horaFormateada}`);
