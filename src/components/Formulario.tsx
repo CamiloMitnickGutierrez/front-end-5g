@@ -17,7 +17,6 @@ const validationSchema = Yup.object().shape({
     primerApellido: Yup.string().required("El Primer apellido es obligatorio"),
     telefono: Yup.string().required("El Teléfono es obligatorio"),
     ciudad: Yup.string().required("La Ciudad es obligatoria"),
-    municipio: Yup.string().required("El Municipio es obligatorio"),
     barrio: Yup.string().required("El Barrio es obligatorio"),
     email: Yup.string().email("Email inválido").required("El email es obligatorio"),
     confirmarEmail: Yup.string()
@@ -38,7 +37,7 @@ export const Formulario: React.FC = () => {
     const formik = useFormik({
         initialValues: {
             nombre: "", primerApellido: "", segundoApellido: "",
-            telefono: "", ciudad: "", municipio: "", barrio: "",
+            telefono: "", ciudad: "", barrio: "",
             invitadoPor: "", primeraVez: "si", email: "", confirmarEmail: ""
         },
         validationSchema,
@@ -114,7 +113,6 @@ export const Formulario: React.FC = () => {
                                 {renderTextField("segundoApellido", "Segundo Apellido (opcional)", 6)}
                                 {renderTextField("telefono", "Teléfono", 6)}
                                 {renderTextField("ciudad", "Ciudad", 6)}
-                                {renderTextField("municipio", "Municipio", 6)}
                                 {renderTextField("barrio", "Barrio", 6)}
                                 {renderTextField("invitadoPor", "Invitado Por (opcional)", 6)}
                                 {renderTextField("email", "Email", 6)}
