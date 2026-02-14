@@ -69,7 +69,7 @@ export const ModalExito: React.FC<ModalExitoProps> = ({ open, onClose, datos, on
                 doc.setTextColor(255, 255, 255);
                 doc.setFontSize(32);
                 doc.setFont('helvetica', 'bold');
-                doc.text('G5', pageWidth - 21, 43, { align: 'center' });
+               
 
                 // Título principal
                 doc.setTextColor(40, 40, 40);
