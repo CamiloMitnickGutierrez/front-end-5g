@@ -63,12 +63,7 @@ export const ModalExito: React.FC<ModalExitoProps> = ({ open, onClose, datos, on
                 // Agregar imagen
                 doc.addImage(base64data, 'PNG', 5, 22, pageWidth - 10, 60);
 
-                // Logo G5
-                doc.setFillColor(100, 150, 200);
-                doc.rect(pageWidth - 35, 25, 28, 28, 'F');
-                doc.setTextColor(255, 255, 255);
-                doc.setFontSize(32);
-                doc.setFont('helvetica', 'bold');
+              
                
 
                 // Título principal
