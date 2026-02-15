@@ -61,112 +61,106 @@ export const ModalExito: React.FC<ModalExitoProps> = ({ open, onClose, datos, on
                 const base64data = reader.result as string;
                 
                 // Agregar imagen del banner debajo del título
-                doc.addImage(base64data, 'PNG', 5, 17, pageWidth - 10, 50);
+                doc.addImage(base64data, 'PNG', 5, 17, pageWidth - 10, 90);
 
-                // Logo G5
-                doc.setFillColor(100, 150, 200);
-                doc.rect(pageWidth - 35, 20, 28, 28, 'F');
-                doc.setTextColor(255, 255, 255);
-                doc.setFontSize(32);
-                doc.setFont('helvetica', 'bold');
-                doc.text('G5', pageWidth - 21, 38, { align: 'center' });
+         
 
                 // Título principal
                 doc.setTextColor(40, 40, 40);
                 doc.setFontSize(32);
-                doc.setFont('times', 'bold');
-                doc.text('Generación de los 5 ministerios', 10, 80);
+                doc.setFont('times', 'bolditalic');
+                doc.text('Generación de los 5 ministerios', 10, 100);
 
                 // Ícono de calendario en blanco y negro
                 doc.setFillColor(255, 255, 255); // Blanco
                 doc.setDrawColor(40, 40, 40); // Negro para bordes
                 doc.setLineWidth(0.5);
-                doc.roundedRect(9, 90, 12, 12, 1.5, 1.5, 'FD');
+                doc.roundedRect(9, 110, 12, 12, 1.5, 1.5, 'FD');
                 doc.setFillColor(40, 40, 40); // Negro para encabezado
-                doc.roundedRect(9, 90, 12, 3, 1.5, 1.5, 'F');
+                doc.roundedRect(9, 110, 12, 3, 1.5, 1.5, 'F');
                 doc.setFillColor(255, 255, 255);
                 // Aros del calendario
-                doc.circle(11.5, 89.5, 0.6, 'F');
-                doc.circle(18.5, 89.5, 0.6, 'F');
+                doc.circle(11.5, 109.5, 0.6, 'F');
+                doc.circle(18.5, 109.5, 0.6, 'F');
                 // Números del calendario
                 doc.setFontSize(6);
                 doc.setTextColor(40, 40, 40);
-                doc.text('6', 11.5, 96.5, { align: 'center' });
-                doc.text('7', 15, 96.5, { align: 'center' });
-                doc.text('8', 18.5, 96.5, { align: 'center' });
+                doc.text('6', 11.5, 116.5, { align: 'center' });
+                doc.text('7', 15, 116.5, { align: 'center' });
+                doc.text('8', 18.5, 116.5, { align: 'center' });
 
                 // Fecha
                 doc.setFontSize(18);
                 doc.setFont('helvetica', 'bold');
                 doc.setTextColor(40, 40, 40);
-                doc.text('6-7-8 DE MARZO', 25, 98);
+                doc.text('6-7-8 DE MARZO', 25, 118);
 
                 // Ícono de ubicación en blanco y negro (pin de mapa)
                 doc.setFillColor(40, 40, 40); // Negro
                 // Pin principal (círculo)
-                doc.circle(15, 112, 5, 'F');
+                doc.circle(15, 132, 5, 'F');
                 // Círculo interior blanco
                 doc.setFillColor(255, 255, 255);
-                doc.circle(15, 112, 2, 'F');
+                doc.circle(15, 132, 2, 'F');
                 // Punta del pin
                 doc.setFillColor(40, 40, 40);
                 doc.setDrawColor(40, 40, 40);
                 for (let i = 0; i < 3; i++) {
-                    doc.line(13 + i * 0.5, 114 + i, 17 - i * 0.5, 114 + i);
+                    doc.line(13 + i * 0.5, 134 + i, 17 - i * 0.5, 134 + i);
                 }
 
                 // Dirección
                 doc.setFontSize(14);
                 doc.setFont('helvetica', 'normal');
                 doc.setTextColor(60, 60, 60);
-                doc.text('Calle 29 #45-64 - Medellín / Antioquia', 24, 117);
+                doc.text('Calle 29 #45-64 - Medellín / Antioquia', 24, 137);
 
                 // Ícono de reloj
                 doc.setDrawColor(40, 40, 40);
                 doc.setLineWidth(1);
-                doc.circle(15, 135, 5);
-                doc.line(15, 135, 15, 131);
-                doc.line(15, 135, 18, 135);
+                doc.circle(15, 155, 5);
+                doc.line(15, 155, 15, 151);
+                doc.line(15, 155, 18, 155);
 
                 // Horarios
                 doc.setFontSize(11);
                 doc.setFont('helvetica', 'bold');
                 doc.setTextColor(40, 40, 40);
-                doc.text('Viernes:', 24, 128);
+                doc.text('Viernes:', 24, 148);
                 doc.setFont('helvetica', 'normal');
                 doc.setTextColor(60, 60, 60);
-                doc.text('Ingreso: 5:30 pm - Evento: 6:30 pm', 42, 128);
+                doc.text('Ingreso: 5:30 pm - Evento: 6:30 pm', 42, 148);
                 
                 doc.setFont('helvetica', 'bold');
                 doc.setTextColor(40, 40, 40);
-                doc.text('Sábado:', 24, 136);
+                doc.text('Sábado:', 24, 156);
                 doc.setFont('helvetica', 'normal');
                 doc.setTextColor(60, 60, 60);
-                doc.text('Ingreso: 1:30 pm - Evento: 3:00 pm', 42, 136);
+                doc.text('Ingreso: 1:30 pm - Evento: 3:00 pm', 42, 156);
                 
                 doc.setFont('helvetica', 'bold');
                 doc.setTextColor(40, 40, 40);
-                doc.text('Domingo:', 24, 144);
+                doc.text('Domingo:', 24, 164);
                 doc.setFont('helvetica', 'normal');
                 doc.setTextColor(60, 60, 60);
-                doc.text('Ingreso: 8:00 am - Evento: 9:00 am', 42, 144);
+                doc.text('Ingreso: 8:00 am - Evento: 9:00 am', 42, 164);
 
                 // Cuadro decorativo con fondo blanco para el QR
                 doc.setDrawColor(40, 40, 40);
                 doc.setLineWidth(0.5);
                 doc.setFillColor(255, 255, 255);
-                doc.rect(pageWidth - 95, 85, 85, 70, 'FD');
+                doc.rect(pageWidth - 95, 105, 85, 70, 'FD');
 
                 // Título del QR
                 doc.setFontSize(12);
                 doc.setFont('helvetica', 'bold');
                 doc.setTextColor(40, 40, 40);
-                doc.text('TU CÓDIGO QR', pageWidth - 52.5, 95, { align: 'center' });
+                doc.text('TU CÓDIGO QR', pageWidth - 52.5, 115, { align: 'center' });
 
                 // Agregar código QR centrado en el recuadro
                 const qrSize = 50; // Tamaño del QR en mm
                 const qrX = pageWidth - 95 + (85 - qrSize) / 2; // Centrar horizontalmente
-                const qrY = 100; // Posición vertical
+                const qrY = 120; // Posición vertical
                 doc.addImage(datos.qrUrl, 'PNG', qrX, qrY, qrSize, qrSize);
 
             
@@ -240,8 +234,10 @@ export const ModalExito: React.FC<ModalExitoProps> = ({ open, onClose, datos, on
             </DialogTitle>
 
             <DialogContent>
-                <Typography variant="body2" sx={{ mb: 3, color: '#e01010' }}>
-                    Tu registro ha sido exitoso. Guarda tu código QR para ingresar al evento , Descargalo en PDF o envíalo a tu correo electrónico.:
+                <Typography variant="body2" sx={{ mb: 3 }}>
+                    <span style={{ color: '#fff' }}>Tu registro ha sido exitoso. </span>
+                    <span style={{ color: '#4caf50', fontWeight: 'bold' }}>Guarda tu código QR para ingresar al evento</span>
+                    <span style={{ color: '#fff' }}>, Descargalo en PDF o envíalo a tu correo electrónico.</span>
                 </Typography>
                 
                 <Box sx={{ 
