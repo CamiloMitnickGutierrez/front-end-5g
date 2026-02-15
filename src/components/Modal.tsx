@@ -39,17 +39,8 @@ export const ModalExito: React.FC<ModalExitoProps> = ({ open, onClose, datos, on
         doc.setFillColor(240, 240, 240);
         doc.rect(0, 0, pageWidth, pageHeight, 'F');
 
-        // Banner negro superior
-        doc.setFillColor(30, 30, 30);
-        doc.rect(0, 0, pageWidth, 20, 'F');
-
-        // Texto del banner
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
-        doc.text('APÓSTOLES-PROFETAS-MAESTROS-EVANGELISTAS-PASTORES', pageWidth / 2, 12, { 
-            align: 'center' 
-        });
+      
+   
 
         // Cargar la imagen de los líderes desde assets local
         try {
