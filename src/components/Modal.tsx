@@ -64,13 +64,6 @@ export const ModalExito: React.FC<ModalExitoProps> = ({ open, onClose, datos, on
                 doc.addImage(base64data, 'PNG', 5, 22, pageWidth - 10, 60);
 
               
-               
-
-                // Título principal
-                doc.setTextColor(40, 40, 40);
-                doc.setFontSize(32);
-                doc.setFont('times', 'bold');
-                doc.text('Generación de los 5 ministerios', 10, 100);
 
                 // Ícono de calendario mejorado
                 doc.setFillColor(220, 53, 69); // Rojo
