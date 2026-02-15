@@ -240,8 +240,8 @@ export const ModalExito: React.FC<ModalExitoProps> = ({ open, onClose, datos, on
             </DialogTitle>
 
             <DialogContent>
-                <Typography variant="body2" sx={{ mb: 3, color: '#aaa' }}>
-                    Tu registro ha sido exitoso. Guarda tu código QR:
+                <Typography variant="body2" sx={{ mb: 3, color: '#e01010' }}>
+                    Tu registro ha sido exitoso. Guarda tu código QR para ingresar al evento , Descargalo en PDF o envíalo a tu correo electrónico.:
                 </Typography>
                 
                 <Box sx={{ 

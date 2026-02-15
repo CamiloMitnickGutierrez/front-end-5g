@@ -150,7 +150,7 @@ export const Formulario: React.FC = () => {
                                         fullWidth type="submit" variant="contained" disabled={cargando}
                                         sx={{ py: 1.5, backgroundColor: '#fff', color: '#000', fontWeight: 'bold' }}
                                     >
-                                        {cargando ? <CircularProgress size={24} sx={{ color: 'black' }} /> : "FINALIZAR REGISTRO"}
+                                        {cargando ? <CircularProgress size={24} sx={{ color: 'black' }} /> : "FINALIZAR REGISTRO y Guarda El QR"}
                                     </Button>
                                 </Box>
                             </Box>
