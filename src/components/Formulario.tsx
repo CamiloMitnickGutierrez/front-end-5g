@@ -148,9 +148,9 @@ export const Formulario: React.FC = () => {
                                 <Box sx={{ width: '100%', px: 1, mt: 1 }}>
                                     <Button
                                         fullWidth type="submit" variant="contained" disabled={cargando}
-                                        sx={{ py: 1.5, backgroundColor: '#fff', color: '#000', fontWeight: 'bold' }}
+                                        sx={{ py: 1.5,   backgroundColor:'#19428a', color: '#000', fontWeight: 'bold' }}
                                     >
-                                        {cargando ? <CircularProgress size={24} sx={{ color: 'black',  backgroundColor:'#19428a'}} /> : "FINALIZAR REGISTRO y Guarda El  Codigo QR (Que te sale a continuacion)"}
+                                        {cargando ? <CircularProgress size={24} sx={{ color: 'black'}} /> : "FINALIZAR REGISTRO y Guarda El  Codigo QR (Que te sale a continuacion)"}
                                     </Button>
                                 </Box>
                             </Box>
